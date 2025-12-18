@@ -36,6 +36,11 @@ export default function App() {
     return stored || 'system';
   });
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+  const fallbackSources = [
+    { title: 'شبکه اطلاع‌رسانی طلا، سکه و ارز', uri: 'https://www.tgju.org/' },
+    { title: 'سایت اقتصادنیوز - قیمت ارز', uri: 'https://www.eghtesadonline.com/' },
+    { title: 'نرخ لحظه‌ای یورو و دلار', uri: 'https://www.bonbast.com/' },
+  ];
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -82,7 +87,8 @@ export default function App() {
     setIsAiLoading(true);
     const result = await PriceService.fetchLivePricesWithAI();
     setPrices(result.data);
-    setSources(result.sources);
+    const nextSources = result.sources.length ? result.sources : fallbackSources;
+    setSources(nextSources);
     setIsAiLoading(false);
   };
 
@@ -179,6 +185,12 @@ export default function App() {
   const mutedText = 'text-[color:var(--text-muted)]';
   const pillTone = 'bg-[color:var(--pill-bg)] text-[color:var(--text-muted)]';
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6366f1'];
+  const sourceContainerTone = resolvedTheme === 'dark'
+    ? 'bg-gradient-to-r from-blue-950/50 via-blue-900/40 to-indigo-900/20 border-blue-900 text-blue-100'
+    : 'bg-blue-50/60 border-blue-100 text-blue-600';
+  const sourceBadgeTone = resolvedTheme === 'dark'
+    ? 'bg-blue-900/60 border-blue-800 text-blue-100 hover:bg-blue-800'
+    : 'bg-white border-blue-100 text-blue-600 hover:bg-blue-100';
 
   return (
     <Layout theme={resolvedTheme}>
@@ -227,11 +239,17 @@ export default function App() {
           />
 
           {sources.length > 0 && (
-            <div className="bg-blue-50/50 p-4 rounded-3xl border border-blue-100 flex flex-col gap-2 mx-1">
-              <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">منابع معتبر قیمت گذاری:</span>
+            <div className={`p-4 rounded-3xl border flex flex-col gap-3 mx-1 ${sourceContainerTone}`}>
+              <span className="text-[10px] font-black uppercase tracking-widest">منابع معتبر قیمت گذاری:</span>
               <div className="flex flex-wrap gap-2">
                 {sources.map((s, i) => (
-                  <a key={i} href={s.uri} target="_blank" rel="noreferrer" className="bg-white px-3 py-2 rounded-xl border border-blue-100 text-[9px] font-bold text-blue-600 hover:bg-blue-100 transition-colors shadow-sm">
+                  <a
+                    key={i}
+                    href={s.uri}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`px-3 py-2 rounded-xl border text-[9px] font-bold transition-colors shadow-sm ${sourceBadgeTone}`}
+                  >
                     {s.title.slice(0, 30)}
                   </a>
                 ))}
