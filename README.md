@@ -18,7 +18,7 @@ CMC Tracker is a portfolio management dashboard for tracking crypto, fiat, and g
    npm install
    ```
 2. Set required environment variables (create a `.env.local` if needed):
-   - `VITE_GEMINI_API_KEY` for AI-backed price updates (Vite only exposes variables with the `VITE_` prefix to the client).
+   - `VITE_GEMINI_API_KEY` for AI-backed price updates (the value will also be mirrored to `GEMINI_API_KEY`/`API_KEY` inside the container, so you only set it once).
    - Optional overrides: `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `PORT` (default `8080`).
 3. Start the development server:
    ```bash

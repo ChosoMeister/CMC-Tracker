@@ -1,11 +1,10 @@
 # Build stage
 FROM node:20-slim AS builder
 ARG VITE_GEMINI_API_KEY
-ARG GEMINI_API_KEY
-ARG API_KEY
+# Single source of truth for the Gemini API key; mirrors to legacy names for compatibility
 ENV VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
-ENV GEMINI_API_KEY=${GEMINI_API_KEY}
-ENV API_KEY=${API_KEY}
+ENV GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
+ENV API_KEY=${VITE_GEMINI_API_KEY}
 WORKDIR /app
 
 # Install dependencies
