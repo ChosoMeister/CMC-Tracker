@@ -1,11 +1,14 @@
+
 export const formatToman = (value: number): string => {
   return new Intl.NumberFormat('fa-IR').format(Math.round(value));
 };
 
 export const formatNumber = (value: number, decimals = 2): string => {
+  // اگر عدد خیلی کوچک بود اعشار بیشتری نشان بده
+  const finalDecimals = value < 1 && value > 0 ? Math.max(decimals, 4) : decimals;
   return new Intl.NumberFormat('fa-IR', {
     minimumFractionDigits: 0,
-    maximumFractionDigits: decimals,
+    maximumFractionDigits: finalDecimals,
   }).format(value);
 };
 
@@ -18,19 +21,22 @@ export const formatPercent = (value: number): string => {
 };
 
 export const formatCurrencyInput = (val: string) => {
-  // Remove non-numeric chars
-  return val.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  if (!val) return "";
+  const cleanVal = val.toString().replace(/,/g, "");
+  if (isNaN(parseFloat(cleanVal))) return "";
+  return cleanVal.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
 export const parseCurrencyInput = (val: string) => {
-  return parseFloat(val.replace(/,/g, ""));
+  if (!val) return 0;
+  return parseFloat(val.toString().replace(/,/g, ""));
 };
 
 export const getAssetIconUrl = (symbol: string): string => {
   switch (symbol) {
     case 'USD': return 'https://flagsapi.com/US/flat/64.png';
     case 'EUR': return 'https://flagsapi.com/EU/flat/64.png';
-    case 'GOLD18': return 'https://img.icons8.com/color/96/gold-bars.png'; // Placeholder
+    case 'GOLD18': return 'https://cdn-icons-png.flaticon.com/512/2652/2652416.png'; 
     case 'USDT': return 'https://cryptologos.cc/logos/tether-usdt-logo.png?v=025';
     case 'ETH': return 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=025';
     case 'ADA': return 'https://cryptologos.cc/logos/cardano-ada-logo.png?v=025';

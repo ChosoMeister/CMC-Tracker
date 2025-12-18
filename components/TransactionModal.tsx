@@ -1,0 +1,188 @@
+
+import React, { useState, useEffect } from 'react';
+import { X, Check, Trash2 } from 'lucide-react';
+import { ASSET_DETAILS, AssetSymbol, Currency, Transaction } from '../types';
+import { formatCurrencyInput, parseCurrencyInput } from '../utils/formatting';
+
+interface TransactionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
+  onDelete?: (id: string) => void;
+  initialData?: Transaction | null;
+}
+
+export const TransactionModal: React.FC<TransactionModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  onDelete,
+  initialData 
+}) => {
+  const [assetSymbol, setAssetSymbol] = useState<AssetSymbol>('USD');
+  const [quantity, setQuantity] = useState('');
+  const [price, setPrice] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currency, setCurrency] = useState<Currency>('TOMAN');
+
+  useEffect(() => {
+    if (initialData) {
+      setAssetSymbol(initialData.assetSymbol);
+      setQuantity(initialData.quantity.toString());
+      setPrice(formatCurrencyInput(initialData.buyPricePerUnit.toString()));
+      setDate(new Date(initialData.buyDateTime).toISOString().split('T')[0]);
+      setCurrency(initialData.buyCurrency);
+    } else {
+      // Default for new
+      setAssetSymbol('USD');
+      setQuantity('');
+      setPrice('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setCurrency('TOMAN');
+    }
+  }, [initialData, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSave = () => {
+    if (!quantity || !price) return;
+    
+    onSave({
+      ...(initialData?.id ? { id: initialData.id } : {}),
+      assetSymbol,
+      quantity: parseFloat(quantity),
+      buyPricePerUnit: parseCurrencyInput(price),
+      buyDateTime: new Date(date).toISOString(),
+      buyCurrency: currency,
+      feesToman: initialData?.feesToman || 0,
+    });
+    onClose();
+  };
+
+  const assetOptions = Object.entries(ASSET_DETAILS).map(([key, val]) => ({
+    symbol: key as AssetSymbol,
+    ...val
+  }));
+
+  const isCrypto = ASSET_DETAILS[assetSymbol].type === 'CRYPTO';
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
+        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <h3 className="font-black text-gray-900">
+            {initialData ? 'ویرایش تراکنش' : 'افزودن تراکنش خرید'}
+          </h3>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-200 text-gray-400 transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {/* Asset Selection */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">انتخاب دارایی</label>
+            <select 
+              value={assetSymbol}
+              onChange={(e) => {
+                const newSymbol = e.target.value as AssetSymbol;
+                setAssetSymbol(newSymbol);
+                if (ASSET_DETAILS[newSymbol].type === 'CRYPTO') setCurrency('USD');
+                else setCurrency('TOMAN');
+              }}
+              className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none"
+            >
+              {assetOptions.map(opt => (
+                <option key={opt.symbol} value={opt.symbol}>
+                  {opt.name} ({opt.symbol})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">مقدار</label>
+              <input 
+                type="number" 
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="0.00"
+                className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all text-left"
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">تاریخ</label>
+              <input 
+                type="date" 
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all text-center"
+              />
+            </div>
+          </div>
+
+          {/* Price */}
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center px-1">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">قیمت واحد</label>
+              {isCrypto && (
+                 <div className="flex gap-2 text-[10px] font-black">
+                    <button 
+                      onClick={() => setCurrency('USD')}
+                      className={`${currency === 'USD' ? 'text-blue-600' : 'text-gray-300'}`}
+                    >USD</button>
+                    <span className="text-gray-200">|</span>
+                    <button 
+                      onClick={() => setCurrency('TOMAN')}
+                      className={`${currency === 'TOMAN' ? 'text-blue-600' : 'text-gray-300'}`}
+                    >TOMAN</button>
+                 </div>
+              )}
+            </div>
+            <div className="relative">
+              <input 
+                type="text" 
+                value={price}
+                onChange={(e) => setPrice(formatCurrencyInput(e.target.value))}
+                placeholder={currency === 'USD' ? 'Price in USD' : 'قیمت به تومان'}
+                className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none transition-all text-left pl-12"
+                dir="ltr"
+              />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-300 pointer-events-none">
+                {currency === 'USD' ? '$' : 'T'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 pt-0 flex flex-col gap-3">
+          <button 
+            onClick={handleSave}
+            disabled={!quantity || !price}
+            className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-xl shadow-blue-600/20 disabled:opacity-50"
+          >
+            <Check size={18} strokeWidth={3} />
+            <span>{initialData ? 'بروزرسانی تغییرات' : 'ثبت تراکنش'}</span>
+          </button>
+
+          {initialData && onDelete && (
+            <button 
+              onClick={() => {
+                if(confirm('آیا از حذف این تراکنش اطمینان دارید؟')) {
+                  onDelete(initialData.id);
+                  onClose();
+                }
+              }}
+              className="w-full bg-rose-50 hover:bg-rose-100 text-rose-500 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all"
+            >
+              <Trash2 size={18} />
+              <span>حذف تراکنش</span>
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

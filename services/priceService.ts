@@ -1,31 +1,77 @@
-import { PriceData } from '../types';
 
-// simulated API response from the "Server"
-// We set USD to a higher value so user's 99k purchase shows as profit
-const MOCK_PRICES: PriceData = {
-  usdToToman: 135000, 
-  eurToToman: 142000,
-  gold18ToToman: 3450000,
+import { GoogleGenAI } from "@google/genai";
+import { PriceData } from '../types';
+import * as Storage from './storage';
+
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+const DEFAULT_PRICES: PriceData = {
+  usdToToman: 70000, 
+  eurToToman: 74000,
+  gold18ToToman: 4700000, 
   cryptoUsdPrices: {
     'USDT': 1.00,
-    'ETH': 3850.50,
-    'ADA': 0.65,
-    'ETC': 32.10,
+    'ETH': 3450.00,
+    'ADA': 0.68,
+    'ETC': 26.00,
   },
   fetchedAt: Date.now(),
 };
 
 export const fetchPrices = async (): Promise<PriceData> => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 600));
-  
-  const randomFactor = 0.995 + Math.random() * 0.01; // +/- 0.5%
-  
-  return {
-    ...MOCK_PRICES,
-    usdToToman: Math.floor(MOCK_PRICES.usdToToman * randomFactor),
-    eurToToman: Math.floor(MOCK_PRICES.eurToToman * randomFactor),
-    gold18ToToman: Math.floor(MOCK_PRICES.gold18ToToman * randomFactor),
-    fetchedAt: Date.now(),
-  };
+  const stored = Storage.getStoredPrices();
+  if (stored) return stored;
+  return DEFAULT_PRICES;
+};
+
+export const fetchLivePricesWithAI = async (): Promise<{ data: PriceData, sources: {title: string, uri: string}[] }> => {
+  try {
+    const now = new Date();
+    const persianDate = now.toLocaleDateString('fa-IR');
+    const currentTime = now.toLocaleTimeString('fa-IR');
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `امروز ${persianDate} و ساعت ${currentTime} است. 
+      وظیفه تو استخراج دقیق قیمت‌های لحظه‌ای از سایت‌های tgju.org و bonbast.com است.
+      
+      لطفا قیمت‌های زیر را پیدا کن:
+      ۱. قیمت فروش نقد ۱ دلار آمریکا در بازار آزاد تهران (دقیق).
+      ۲. قیمت ۱ گرم طلای ۱۸ عیار (دقت کن قیمت گرم ۱۸ را می‌خواهم نه مثقال یا سکه).
+      ۳. قیمت فروش ۱ یورو در بازار آزاد.
+
+      خروجی را فقط به صورت JSON زیر برگردان (اعداد بدون کاما و به تومان):
+      {"usd": number, "gold_gram_18": number, "eur": number}`,
+      config: {
+        tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json"
+      },
+    });
+
+    const jsonStr = response.text || "{}";
+    const cleanJson = JSON.parse(jsonStr.replace(/```json|```/g, ""));
+    
+    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
+      ?.map((chunk: any) => ({
+        title: chunk.web?.title || 'منبع قیمت',
+        uri: chunk.web?.uri || ''
+      })) || [];
+
+    const updatedData: PriceData = {
+      ...DEFAULT_PRICES,
+      usdToToman: cleanJson.usd > 10000 ? cleanJson.usd : DEFAULT_PRICES.usdToToman,
+      eurToToman: cleanJson.eur > 10000 ? cleanJson.eur : DEFAULT_PRICES.eurToToman,
+      gold18ToToman: cleanJson.gold_gram_18 > 1000000 ? cleanJson.gold_gram_18 : DEFAULT_PRICES.gold18ToToman,
+      fetchedAt: Date.now(),
+    };
+
+    // ذخیره در کش
+    Storage.savePrices(updatedData);
+
+    return { data: updatedData, sources };
+  } catch (error) {
+    console.error("AI Price Fetch Error:", error);
+    const lastStored = Storage.getStoredPrices();
+    return { data: lastStored || DEFAULT_PRICES, sources: [] };
+  }
 };
