@@ -17,14 +17,14 @@ export const AssetRow: React.FC<AssetRowProps> = ({ asset, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="bg-[var(--card-bg)] text-[color:var(--text-primary)] p-5 flex items-center justify-between border-b border-[color:var(--border-color)] active:bg-[color:var(--muted-surface)] transition-all cursor-pointer group"
+      className="stagger-item hover-lift spring-smooth bg-[var(--card-bg)] text-[color:var(--text-primary)] p-5 flex items-center justify-between border-b border-[color:var(--border-color)] active:bg-[color:var(--muted-surface)] cursor-pointer group"
     >
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-2xl bg-[color:var(--muted-surface)] p-1.5 border border-[color:var(--border-color)] flex items-center justify-center overflow-hidden shrink-0 shadow-sm group-hover:scale-110 transition-transform">
           {iconUrl ? (
             <img src={iconUrl} alt={asset.symbol} className="w-full h-full object-contain" />
           ) : (
-             <span className={`text-sm font-black ${mutedText}`}>{asset.symbol.slice(0, 2)}</span>
+            <span className={`text-sm font-black ${mutedText}`}>{asset.symbol.slice(0, 2)}</span>
           )}
         </div>
         <div>
@@ -38,9 +38,9 @@ export const AssetRow: React.FC<AssetRowProps> = ({ asset, onClick }) => {
           </div>
           {/* نمایش قیمت لحظه‌ای واحد */}
           <div className="text-[10px] text-blue-600 mt-1 font-black flex items-center gap-1">
-             <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></span>
-             <span>قیمت واحد:</span>
-             <span dir="ltr">{formatToman(asset.currentPriceToman)} ت</span>
+            <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></span>
+            <span>قیمت واحد:</span>
+            <span dir="ltr">{formatToman(asset.currentPriceToman)} ت</span>
           </div>
         </div>
       </div>
@@ -52,7 +52,7 @@ export const AssetRow: React.FC<AssetRowProps> = ({ asset, onClick }) => {
           <span>{formatPercent(asset.pnlPercent)}</span>
         </div>
         <div className={`text-[9px] ${mutedText} mt-1 font-bold`} dir="ltr">
-           سود/ضرر: {formatToman(asset.pnlToman)} ت
+          سود/ضرر: {formatToman(asset.pnlToman)} ت
         </div>
       </div>
     </div>
