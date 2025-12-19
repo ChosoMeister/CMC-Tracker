@@ -111,7 +111,8 @@ app.post('/api/logs', (req, res) => {
 
 // API Endpoints
 app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
+    let { username, password } = req.body;
+    username = username.toLowerCase();
     const users = getUsers();
     const user = users.find(u => u.username === username && u.passwordHash === password);
     if (user) return res.json({ username: user.username, isAdmin: !!user.isAdmin });
@@ -119,7 +120,8 @@ app.post('/api/login', (req, res) => {
 });
 
 app.post('/api/register', async (req, res) => {
-    const { username, password } = req.body;
+    let { username, password } = req.body;
+    username = username.toLowerCase();
     let users = [...getUsers()];
     if (users.find(u => u.username === username)) return res.status(400).json({ message: 'نام کاربری تکراری است' });
     const newUser = { username, passwordHash: password, createdAt: new Date(), transactions: [], isAdmin: false };
@@ -133,19 +135,22 @@ app.get('/api/users', (req, res) => {
 });
 
 app.post('/api/users/delete', async (req, res) => {
-    const { username } = req.body;
+    let { username } = req.body;
+    username = username.toLowerCase();
     if (username === ADMIN_USER) return res.status(400).json({ message: 'حذف ادمین غیرمجاز است' });
     await saveUsers(getUsers().filter(u => u.username !== username));
     res.json({ success: true });
 });
 
 app.get('/api/transactions', (req, res) => {
-    const user = getUsers().find(u => u.username === req.query.username);
+    const username = req.query.username ? req.query.username.toLowerCase() : '';
+    const user = getUsers().find(u => u.username === username);
     res.json(user ? user.transactions : []);
 });
 
 app.post('/api/transactions', async (req, res) => {
-    const { username, transaction } = req.body;
+    let { username, transaction } = req.body;
+    username = username.toLowerCase();
     let users = [...getUsers()];
     const userIndex = users.findIndex(u => u.username === username);
 
@@ -164,7 +169,8 @@ app.post('/api/transactions', async (req, res) => {
 });
 
 app.post('/api/transactions/delete', async (req, res) => {
-    const { username, id } = req.body;
+    let { username, id } = req.body;
+    username = username.toLowerCase();
     let users = [...getUsers()];
     const userIndex = users.findIndex(u => u.username === username);
 
