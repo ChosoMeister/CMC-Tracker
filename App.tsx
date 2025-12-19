@@ -2,7 +2,11 @@ import React, { useEffect, useState, useMemo, Suspense, lazy } from 'react';
 import { Layout } from './components/Layout';
 import { BottomNav } from './components/BottomNav';
 import { SummaryCard } from './components/SummaryCard';
+import { AllocationChart } from './components/AllocationChart';
 import { AssetRow } from './components/AssetRow';
+import { SummaryCardSkeleton, AssetRowSkeleton } from './components/Skeleton';
+import { EmptyState } from './components/EmptyState';
+import { useToast } from './components/Toast';
 import { LoginPage } from './components/LoginPage';
 import { Transaction, PriceData, PortfolioSummary, ASSET_DETAILS, AssetSummary } from './types';
 import { API } from './services/api';
@@ -24,6 +28,7 @@ export default function App() {
   const [prices, setPrices] = useState<PriceData | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [sources, setSources] = useState<{ title: string, uri: string }[]>([]);
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -75,7 +80,7 @@ export default function App() {
   useEffect(() => {
     if (user) {
       const loadData = async () => {
-        // Parallel Fetching
+        setLoading(true);
         try {
           const [txs, p] = await Promise.all([
             API.getTransactions(user.username),
@@ -85,6 +90,8 @@ export default function App() {
           setPrices(p);
         } catch (error) {
           console.error("Failed to load data", error);
+        } finally {
+          setLoading(false);
         }
       };
       loadData();
@@ -246,13 +253,20 @@ export default function App() {
               </div>
             </div>
 
-            <SummaryCard
-              summary={portfolioSummary}
-              isRefreshing={isRefreshing}
-              lastUpdated={prices?.fetchedAt || Date.now()}
-              onRefresh={() => PriceService.fetchPrices().then(setPrices)}
-              prices={prices}
-            />
+            {loading ? (
+              <SummaryCardSkeleton />
+            ) : (
+              <>
+                <SummaryCard
+                  summary={portfolioSummary}
+                  isRefreshing={isRefreshing}
+                  lastUpdated={prices?.fetchedAt || Date.now()}
+                  onRefresh={() => PriceService.fetchPrices().then(setPrices)}
+                  prices={prices}
+                />
+                <AllocationChart summary={portfolioSummary} />
+              </>
+            )}
 
             {sources.length > 0 && (
               <div className={`p-4 rounded-3xl border flex flex-col gap-3 mx-1 ${sourceContainerTone}`}>
