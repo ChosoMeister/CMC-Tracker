@@ -366,7 +366,17 @@ export default function App() {
         )}
 
         <BottomNav currentTab={tab} onTabChange={setTab} />
-        <button onClick={() => { setEditingTransaction(null); setIsTxModalOpen(true); }} className="ripple spring-bounce fixed bottom-24 left-6 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-[20px] p-5 shadow-blue z-50"><Plus size={28} strokeWidth={3} /></button>
+
+        {/* FAB Container to align with main content width */}
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] pointer-events-none z-50 h-full">
+          <button
+            onClick={() => { setEditingTransaction(null); setIsTxModalOpen(true); }}
+            className="pointer-events-auto absolute bottom-24 left-6 ripple spring-bounce bg-blue-600 hover:bg-blue-700 text-white rounded-[20px] p-4 shadow-xl active:scale-90 transition-all"
+          >
+            <Plus size={28} strokeWidth={3} />
+          </button>
+        </div>
+
         <TransactionModal isOpen={isTxModalOpen} initialData={editingTransaction} onClose={() => setIsTxModalOpen(false)} onSave={handleSaveTransaction} onDelete={handleDeleteTransaction} />
         <SettingsDrawer
           isOpen={isSettingsDrawerOpen}

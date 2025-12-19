@@ -16,14 +16,14 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ summary, isRefreshing,
   const isProfit = summary.totalPnlToman >= 0;
 
   return (
-    <div className="relative overflow-hidden mb-4 rounded-[32px]">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 gradient-animated opacity-90"></div>
+    <div className="relative overflow-hidden mb-4 rounded-[32px] border border-white/5 shadow-2xl">
+      {/* Refined subtle background - no jarring gradient */}
+      <div className="absolute inset-0 bg-slate-900/50"></div>
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none translate-y-1/2 -translate-x-1/2"></div>
 
-      {/* Glassmorphism overlay */}
-      <div className="glass-strong relative p-6 shadow-2xl">
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 blur-[100px] rounded-full"></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-white/5 blur-[100px] rounded-full"></div>
+      {/* Apple Liquid Glass Overlay */}
+      <div className="glass-strong relative p-6">
 
         <div className="relative z-10">
           <div className="flex justify-between items-center mb-6">
@@ -36,7 +36,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ summary, isRefreshing,
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className={`p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-90 ${isRefreshing ? 'animate-spin opacity-50' : ''}`}
+              className={`ripple p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95 ${isRefreshing ? 'animate-spin opacity-50' : ''}`}
             >
               <RefreshCw size={16} className="text-slate-300" />
             </button>
