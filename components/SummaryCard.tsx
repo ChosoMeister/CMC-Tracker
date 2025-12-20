@@ -41,13 +41,6 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ summary, isRefreshing,
               </div>
               <span className="text-slate-500 dark:text-slate-400 text-[11px] font-black uppercase tracking-widest">ارزش فعلی سبد دارایی</span>
             </div>
-            <button
-              onClick={onRefresh}
-              disabled={isRefreshing}
-              className={`ripple p-2.5 rounded-2xl bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 border border-black/5 dark:border-white/10 transition-all active:scale-95 ${isRefreshing ? 'animate-spin opacity-50' : ''}`}
-            >
-              <RefreshCw size={16} className="text-slate-600 dark:text-slate-300" />
-            </button>
           </div>
 
           <div className="flex flex-col items-center mb-8">

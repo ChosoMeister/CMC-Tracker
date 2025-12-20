@@ -138,9 +138,9 @@ export const JalaliDatePicker: React.FC<JalaliDatePickerProps> = ({
                 <Calendar size={18} className="text-[color:var(--text-muted)]" />
             </div>
 
-            {/* Calendar dropdown */}
+            {/* Calendar dropdown - opens upward */}
             {isOpen && (
-                <div className="absolute top-full right-0 mt-2 w-72 bg-[var(--card-bg)] border border-[color:var(--border-color)] rounded-2xl shadow-2xl z-[200] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute bottom-full right-0 mb-2 w-72 bg-[var(--card-bg)] border border-[color:var(--border-color)] rounded-2xl shadow-2xl z-[200] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-[color:var(--border-color)] bg-[color:var(--muted-surface)]">
                         <button
