@@ -6,14 +6,15 @@ import { AllocationChart } from './components/AllocationChart';
 import { AssetRow } from './components/AssetRow';
 import { SummaryCardSkeleton, AssetRowSkeleton } from './components/Skeleton';
 import { EmptyState } from './components/EmptyState';
+import { PullToRefresh } from './components/PullToRefresh';
 import { LoginPage } from './components/LoginPage';
 import { Transaction, PriceData, PortfolioSummary, AssetSummary, getAssetDetail } from './types';
 import { API } from './services/api';
 import * as PriceService from './services/priceService';
-import { Plus, ArrowUpRight, ArrowDownRight, LogOut, Shield, Settings, Sparkles, UserCircle } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownRight, LogOut, Shield, Settings, Sparkles, UserCircle, RefreshCw } from 'lucide-react';
 import { formatToman, formatNumber, formatPercent } from './utils/formatting';
-// Recharts imports removed as they are unused in the current render
 import * as AuthService from './services/authService';
+import { useToast } from './components/Toast';
 
 // Lazy Load Heavy Components
 const TransactionModal = lazy(() => import('./components/TransactionModal').then(module => ({ default: module.TransactionModal })));
@@ -35,8 +36,11 @@ export default function App() {
   const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [priceUpdateMessage, setPriceUpdateMessage] = useState<string>('');
-  const [nextPriceAllowedAt, setNextPriceAllowedAt] = useState<number | null>(null);
+  const { addToast } = useToast();
+  // Pull-to-refresh state
+  const [pullStartY, setPullStartY] = useState(0);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [theme, setTheme] = useState<ThemeOption>(() => {
     if (typeof window === 'undefined') return 'light';
@@ -136,16 +140,15 @@ export default function App() {
       setPrices(result.data);
       const nextSources = result.sources.length ? result.sources : fallbackSources;
       setSources(nextSources);
-      setNextPriceAllowedAt(result.nextAllowedAt || null);
       if (result.skipped) {
         const nextTime = result.nextAllowedAt ? new Date(result.nextAllowedAt).toLocaleTimeString('fa-IR') : '';
-        setPriceUpdateMessage(result.message || (nextTime ? `بروزرسانی بعد از ${nextTime}` : 'بروزرسانی کمتر از یک ساعت مجاز نیست'));
+        addToast(result.message || (nextTime ? `بروزرسانی بعد از ${nextTime}` : 'بروزرسانی کمتر از یک ساعت مجاز نیست'), 'info');
       } else {
-        setPriceUpdateMessage('');
+        addToast('قیمت‌ها با موفقیت بروزرسانی شد', 'success');
       }
     } catch (error) {
       console.error('Price update failed:', error);
-      setPriceUpdateMessage('خطا در بروزرسانی قیمت‌ها');
+      addToast('خطا در بروزرسانی قیمت‌ها', 'error');
     } finally {
       setIsPriceUpdating(false);
     }
@@ -271,24 +274,24 @@ export default function App() {
     <Layout theme={resolvedTheme}>
       <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
         {tab === 'overview' && (
-          <div className="p-4 space-y-4 animate-in fade-in duration-500 pb-20">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-2 px-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/20">
-                  <Shield size={16} className="text-white" />
-                </div>
-                <div>
-                  <span className="font-black text-[color:var(--text-primary)] text-lg tracking-tight block leading-none">{displayName || 'پنل مدیریت'}</span>
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="text-[10px] text-blue-600 font-bold uppercase">{user.username}</span>
-                    <span className="text-[8px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 px-1.5 py-0.5 rounded hidden sm:flex items-center gap-0.5 border border-violet-200 dark:border-violet-500/20">
-                      <Sparkles size={8} /> Powered by AI
-                    </span>
+          <PullToRefresh onRefresh={async () => { await handlePriceUpdate(); }} disabled={isPriceUpdating}>
+            <div className="p-4 space-y-4 animate-in fade-in duration-500 pb-20">
+              <div className="flex justify-between items-center mb-2 px-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/20">
+                    <Shield size={16} className="text-white" />
+                  </div>
+                  <div>
+                    <span className="font-black text-[color:var(--text-primary)] text-lg tracking-tight block leading-none">{displayName || 'پنل مدیریت'}</span>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-[10px] text-blue-600 font-bold uppercase">{user.username}</span>
+                      <span className="text-[8px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 px-1.5 py-0.5 rounded hidden sm:flex items-center gap-0.5 border border-violet-200 dark:border-violet-500/20">
+                        <Sparkles size={8} /> Powered by AI
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-                <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsSettingsDrawerOpen(true)}
                     className={`${cardSurface} p-2.5 rounded-xl hover:opacity-90 transition-all`}
@@ -301,98 +304,84 @@ export default function App() {
                       <UserCircle size={18} />
                     </button>
                   )}
-                </div>
-                <div className="flex flex-col gap-1 items-stretch sm:items-end w-full sm:w-auto">
                   <button
                     onClick={handlePriceUpdate}
                     disabled={isPriceUpdating}
-                    className={`relative overflow-hidden group flex items-center justify-center sm:justify-between gap-2 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 text-white text-[10px] font-black px-4 py-2.5 rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 active:scale-95 transition-all ${isPriceUpdating ? 'animate-pulse opacity-80' : ''}`}
+                    className={`relative overflow-hidden group flex items-center gap-2 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 text-white text-[10px] font-black px-4 py-2.5 rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 active:scale-95 transition-all ${isPriceUpdating ? 'animate-pulse opacity-80' : ''}`}
                   >
                     <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12"></div>
                     <Sparkles size={14} className={isPriceUpdating ? "animate-spin" : ""} />
                     <span>بروزرسانی هوشمند</span>
                   </button>
-                  {priceUpdateMessage && (
-                    <div className="w-full sm:min-w-[260px] sm:max-w-[320px]">
-                      <div className="px-3 py-2 rounded-xl border border-amber-200/60 dark:border-amber-500/30 bg-amber-50/70 dark:bg-amber-500/10 text-amber-700 dark:text-amber-200 text-[10px] font-bold text-right leading-relaxed shadow-sm">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="flex-1 leading-snug">{priceUpdateMessage}</span>
-                          {nextPriceAllowedAt && (
-                            <span className="shrink-0 font-black text-[9px]">{new Date(nextPriceAllowedAt).toLocaleTimeString('fa-IR')}</span>
-                          )}
-                        </div>
+                </div>
+              </div>
+
+              {loading ? (
+                <SummaryCardSkeleton />
+              ) : (
+                <>
+                  <SummaryCard
+                    summary={portfolioSummary}
+                    isRefreshing={isPriceUpdating}
+                    lastUpdated={prices?.fetchedAt || Date.now()}
+                    onRefresh={handlePriceUpdate}
+                    prices={prices}
+                  />
+                  <AllocationChart summary={portfolioSummary} />
+                </>
+              )}
+
+              {sources.length > 0 && (
+                <div className={`p-4 rounded-3xl border flex flex-col gap-3 mx-1 ${sourceContainerTone}`}>
+                  <span className="text-[10px] font-black uppercase tracking-widest">منابع معتبر قیمت گذاری:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {sources.map((s, i) => (
+                      <a
+                        key={i}
+                        href={s.uri}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={`px-3 py-2 rounded-xl border text-[9px] font-bold transition-colors shadow-sm ${sourceBadgeTone}`}
+                      >
+                        {s.title.slice(0, 30)}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className={`${cardSurface} p-5 rounded-[28px] shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group`}>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-1.5 text-emerald-600 font-black text-[10px] uppercase tracking-wider mb-1">
+                      <ArrowUpRight size={14} />
+                      <span>بهترین عملکرد</span>
+                    </div>
+                    {portfolioSummary.assets[0] ? (
+                      <div className="mt-2">
+                        <div className="font-black text-[color:var(--text-primary)] text-sm truncate">{portfolioSummary.assets[0].name}</div>
+                        <div className="text-emerald-500 text-xs font-black mt-1" dir="ltr">{formatPercent(portfolioSummary.assets[0].pnlPercent)}</div>
                       </div>
+                    ) : <div className="text-gray-300 text-xs mt-2 font-bold">دیتا موجود نیست</div>}
+                  </div>
+                </div>
+                <div className={`${cardSurface} p-5 rounded-[28px] shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group`}>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-1.5 text-rose-600 font-black text-[10px] uppercase tracking-wider mb-1">
+                      <ArrowDownRight size={14} />
+                      <span>ضعیف‌ترین عملکرد</span>
                     </div>
-                  )}
+                    {portfolioSummary.assets.length > 1 ? (
+                      <div className="mt-2">
+                        <div className="font-black text-[color:var(--text-primary)] text-sm truncate">{portfolioSummary.assets[portfolioSummary.assets.length - 1].name}</div>
+                        <div className="text-rose-500 text-xs font-black mt-1" dir="ltr">{formatPercent(portfolioSummary.assets[portfolioSummary.assets.length - 1].pnlPercent)}</div>
+                      </div>
+                    ) : <div className="text-gray-300 text-xs mt-2 font-bold">دیتا موجود نیست</div>}
+                  </div>
                 </div>
               </div>
             </div>
-
-            {loading ? (
-              <SummaryCardSkeleton />
-            ) : (
-              <>
-              <SummaryCard
-                  summary={portfolioSummary}
-                  isRefreshing={isPriceUpdating}
-                  lastUpdated={prices?.fetchedAt || Date.now()}
-                  onRefresh={handlePriceUpdate}
-                  prices={prices}
-                />
-                <AllocationChart summary={portfolioSummary} />
-              </>
-            )}
-
-            {sources.length > 0 && (
-              <div className={`p-4 rounded-3xl border flex flex-col gap-3 mx-1 ${sourceContainerTone}`}>
-                <span className="text-[10px] font-black uppercase tracking-widest">منابع معتبر قیمت گذاری:</span>
-                <div className="flex flex-wrap gap-2">
-                  {sources.map((s, i) => (
-                    <a
-                      key={i}
-                      href={s.uri}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`px-3 py-2 rounded-xl border text-[9px] font-bold transition-colors shadow-sm ${sourceBadgeTone}`}
-                    >
-                      {s.title.slice(0, 30)}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className={`${cardSurface} p-5 rounded-[28px] shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group`}>
-                <div className="relative z-10">
-                  <div className="flex items-center gap-1.5 text-emerald-600 font-black text-[10px] uppercase tracking-wider mb-1">
-                    <ArrowUpRight size={14} />
-                    <span>بهترین عملکرد</span>
-                  </div>
-                  {portfolioSummary.assets[0] ? (
-                    <div className="mt-2">
-                      <div className="font-black text-[color:var(--text-primary)] text-sm truncate">{portfolioSummary.assets[0].name}</div>
-                      <div className="text-emerald-500 text-xs font-black mt-1" dir="ltr">{formatPercent(portfolioSummary.assets[0].pnlPercent)}</div>
-                    </div>
-                  ) : <div className="text-gray-300 text-xs mt-2 font-bold">دیتا موجود نیست</div>}
-                </div>
-              </div>
-              <div className={`${cardSurface} p-5 rounded-[28px] shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group`}>
-                <div className="relative z-10">
-                  <div className="flex items-center gap-1.5 text-rose-600 font-black text-[10px] uppercase tracking-wider mb-1">
-                    <ArrowDownRight size={14} />
-                    <span>ضعیف‌ترین عملکرد</span>
-                  </div>
-                  {portfolioSummary.assets.length > 1 ? (
-                    <div className="mt-2">
-                      <div className="font-black text-[color:var(--text-primary)] text-sm truncate">{portfolioSummary.assets[portfolioSummary.assets.length - 1].name}</div>
-                      <div className="text-rose-500 text-xs font-black mt-1" dir="ltr">{formatPercent(portfolioSummary.assets[portfolioSummary.assets.length - 1].pnlPercent)}</div>
-                    </div>
-                  ) : <div className="text-gray-300 text-xs mt-2 font-bold">دیتا موجود نیست</div>}
-                </div>
-              </div>
-            </div>
-          </div>
+          </PullToRefresh>
         )}
 
         {tab === 'holdings' && (
@@ -406,11 +395,21 @@ export default function App() {
                 className="w-full bg-[color:var(--muted-surface)] rounded-2xl py-3 px-4 text-sm font-bold focus:outline-none border border-[color:var(--border-color)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)]"
               />
             </div>
-            <div>
-              {filteredAssets.map(asset => (
-                <AssetRow key={asset.symbol} asset={asset} onClick={() => { setTab('transactions'); setSearchQuery(asset.symbol); }} />
-              ))}
-            </div>
+            {filteredAssets.length === 0 ? (
+              <EmptyState
+                type="holdings"
+                title="هنوز دارایی‌ای ثبت نشده"
+                description="با افزودن اولین تراکنش، دارایی‌های شما اینجا نمایش داده می‌شود."
+                actionLabel="افزودن تراکنش"
+                onAction={() => { setEditingTransaction(null); setIsTxModalOpen(true); }}
+              />
+            ) : (
+              <div>
+                {filteredAssets.map(asset => (
+                  <AssetRow key={asset.symbol} asset={asset} onClick={() => { setTab('transactions'); setSearchQuery(asset.symbol); }} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -436,20 +435,30 @@ export default function App() {
                 <button onClick={handleLogout} className="p-2.5 bg-rose-50 rounded-xl text-rose-500"><LogOut size={18} /></button>
               </div>
             </div>
-                <div className="space-y-3">
-              {[...transactions].reverse().map(tx => (
-                <div key={tx.id} onClick={() => { setEditingTransaction(tx); setIsTxModalOpen(true); }} className={`${cardSurface} p-5 rounded-3xl flex justify-between items-center cursor-pointer`}>
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-[10px]">{tx.assetSymbol}</div>
-                    <div>
-                      <div className="font-black text-sm text-[color:var(--text-primary)]">{getAssetDetail(tx.assetSymbol).name}</div>
-                      <div className={`text-[10px] font-bold mt-1 ${mutedText}`} dir="ltr">{new Date(tx.buyDateTime).toLocaleDateString('fa-IR')}</div>
+            {transactions.length === 0 ? (
+              <EmptyState
+                type="transactions"
+                title="تراکنشی ثبت نشده"
+                description="با ثبت اولین خرید خود، تاریخچه تراکنش‌ها را اینجا مشاهده کنید."
+                actionLabel="ثبت تراکنش جدید"
+                onAction={() => { setEditingTransaction(null); setIsTxModalOpen(true); }}
+              />
+            ) : (
+              <div className="space-y-3">
+                {[...transactions].reverse().map(tx => (
+                  <div key={tx.id} onClick={() => { setEditingTransaction(tx); setIsTxModalOpen(true); }} className={`${cardSurface} p-5 rounded-3xl flex justify-between items-center cursor-pointer`}>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-[10px]">{tx.assetSymbol}</div>
+                      <div>
+                        <div className="font-black text-sm text-[color:var(--text-primary)]">{getAssetDetail(tx.assetSymbol).name}</div>
+                        <div className={`text-[10px] font-bold mt-1 ${mutedText}`} dir="ltr">{new Date(tx.buyDateTime).toLocaleDateString('fa-IR')}</div>
+                      </div>
                     </div>
+                    <div className="text-left font-black text-sm text-[color:var(--text-primary)]" dir="ltr">{formatNumber(tx.quantity)}</div>
                   </div>
-                  <div className="text-left font-black text-sm text-[color:var(--text-primary)]" dir="ltr">{formatNumber(tx.quantity)}</div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

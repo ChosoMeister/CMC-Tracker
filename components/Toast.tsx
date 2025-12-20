@@ -32,7 +32,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setToasts((prev) => [...prev, { id, message, type }]);
         setTimeout(() => {
             setToasts((prev) => prev.filter((t) => t.id !== id));
-        }, 4000);
+        }, 2000);
     }, []);
 
     const removeToast = (id: string) => {
@@ -42,11 +42,11 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (
         <ToastContext.Provider value={{ addToast }}>
             {children}
-            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 w-full max-w-sm px-4 pointer-events-none">
+            <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 w-full max-w-sm px-4 pointer-events-none">
                 {toasts.map((toast) => (
                     <div
                         key={toast.id}
-                        className={`pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-2xl border transition-all animate-in slide-in-from-top-5 fade-in duration-300 ${toast.type === 'success' ? 'bg-emerald-900/90 border-emerald-500/30 text-emerald-100' :
+                        className={`pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-2xl border transition-all animate-in slide-in-from-bottom-5 fade-in duration-300 ${toast.type === 'success' ? 'bg-emerald-900/90 border-emerald-500/30 text-emerald-100' :
                                 toast.type === 'error' ? 'bg-rose-900/90 border-rose-500/30 text-rose-100' :
                                     'bg-slate-900/90 border-slate-500/30 text-slate-100'
                             } backdrop-blur-md`}
